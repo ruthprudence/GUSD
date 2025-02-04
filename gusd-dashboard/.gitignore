@@ -19,7 +19,7 @@
 .env.production.local
 
 # credentials
-backend/credentials
+/backend/credentials
 
 npm-debug.log*
 yarn-debug.log*
