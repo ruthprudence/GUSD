@@ -1,0 +1,138 @@
+// src/Components/API/config.js
+export const API_BASE_URL = "http://159.54.187.132:3000/api";
+
+export const fetchWithError = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};// src/Components/API/studentService.js
+import { API_BASE_URL, fetchWithError } from './config';
+import { calculateGraduationProgress, calculateRiskStatus } from './utils';
+
+export const fetchStudents = async (filters = {}) => {
+  try {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    
+    const url = `${API_BASE_URL}/students${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const data = await fetchWithError(url);
+    
+    return data.map(student => ({
+      ...student,
+      graduationProgress: calculateGraduationProgress(student),
+      riskStatus: calculateRiskStatus(student)
+    }));
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    throw error;
+  }
+};
+
+export const fetchStudentDetails = async (studentId) => {
+  try {
+    const [student, attendance, grades] = await Promise.all([
+      fetchWithError(`${API_BASE_URL}/students/${studentId}`),
+      fetchWithError(`${API_BASE_URL}/attendance/student/${studentId}`),
+      fetchWithError(`${API_BASE_URL}/final-grades/student/${studentId}`)
+    ]);
+    return { ...student, attendance, grades };
+  } catch (error) {
+    console.error('Error fetching student details:', error);
+    throw error;
+  }
+};// src/Components/API/statusService.js
+import { API_BASE_URL, fetchWithError } from './config';
+
+export const fetchDBStatus = async () => {
+  try {
+    const response = await fetchWithError(`${API_BASE_URL}/db-status`);
+    return response.status;
+  } catch (error) {
+    console.error('Error checking DB status:', error);
+    return 'error';
+  }
+};// src/Components/API/studentService.js
+import { API_BASE_URL, fetchWithError } from './config';
+import { calculateGraduationProgress, calculateRiskStatus } from './utils';
+
+export const fetchStudents = async (filters = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+  
+      const url = `${API_BASE_URL}/students${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      console.log('Fetching from URL:', url);
+  
+      const response = await fetchWithError(url);
+      console.log('Raw API response:', response);
+  
+      const data = Array.isArray(response) ? response : [];
+      console.log('Processed data:', data);
+  
+      const mappedData = data.map(student => {
+        console.log(`Processing Student ID: ${student.ID}`);
+        console.log('Grades:', student.FinalGrades);
+        console.log('Attendance:', student.Attendance);
+  
+        return {
+          ...student,
+          ID: student.ID || Math.random().toString(),
+          First_Name: student.First_Name || '',
+          Last_Name: student.Last_Name || '',
+          School: student.School || '',
+          Grade: student.Grade || 0,
+          FinalGrades: student.FinalGrades || [],
+          Attendance: student.Attendance || 0,
+          graduationProgress: calculateGraduationProgress(student),
+          isAtRisk: calculateRiskStatus(student),
+          ELL_Status: student.Flag_EnglishLanguageLearner ? 'YES' : 'NO',
+          Foster_Care: student.Flag_FosterCare ? 'YES' : 'NO',
+          Expected_Graduation: student.Expected_Graduation?.toString() || ''
+        };
+      });
+  
+      console.log('Mapped data:', mappedData);
+      return mappedData;
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      return [];
+    }
+  };
+  // src/Components/API/utils.js
+export const calculateGraduationProgress = (student) => {
+    if (!student?.FinalGrades?.length) return 0;
+    
+    const totalRequired = 220;
+    const earned = student.FinalGrades.reduce((sum, grade) => {
+      const creditAwarded = parseFloat(grade.Credit_Awarded) || 0;
+      return sum + creditAwarded;
+    }, 0);
+    
+    return Math.min(Math.round((earned / totalRequired) * 100), 100);
+  };
+  
+  export const calculateRiskStatus = (student) => {
+    if (!student?.FinalGrades?.length && student?.Attendance === undefined) return false;
+    
+    const attendanceThreshold = 80;
+    const hasFailingGrades = student.FinalGrades?.some(grade => 
+      grade.Letter_Grade === 'F' || grade.Letter_Grade === 'f'
+    );
+    const poorAttendance = student.Attendance < attendanceThreshold;
+    
+    return hasFailingGrades || poorAttendance;
+  };
