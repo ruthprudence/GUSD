@@ -1,6 +1,6 @@
 // src/Components/DBStatus.js
 import { useEffect, useState } from 'react';
-import { fetchDBStatus } from './API/statusService';
+import { fetchDBStatus } from '../API/statusService';
 
 function DBStatus() {
   const [status, setStatus] = useState('loading');

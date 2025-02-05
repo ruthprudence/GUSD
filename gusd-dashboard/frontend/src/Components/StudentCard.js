@@ -1,5 +1,5 @@
 import React from 'react';
-import { calculateGraduationProgress } from './API/utils';
+import { calculateGraduationProgress } from '../API/utils';
 
 const StudentCard = ({ student }) => {
   console.log(`Rendering Student Card for ${student.First_Name} ${student.Last_Name}`);

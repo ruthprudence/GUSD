@@ -1,10 +1,9 @@
 // src/Components/GraduationDashboard.js
-// src/Components/GraduationDashboard.js
 import React, { useState, useEffect } from 'react';
-import { fetchStudents } from './API/studentService';
-import StudentSearch from './StudentSearch';
-import StudentGrid from './StudentGrid';
-import DemographicFilters from './DemographicFilters';
+import { fetchStudents } from '../API/studentService';
+import StudentSearch from '../Components/StudentSearch';
+import StudentGrid from '../Components/StudentGrid';
+import DemographicFilters from '../Components/DemographicFilters';
 
 const GraduationDashboard = () => {
   const [students, setStudents] = useState([]);
